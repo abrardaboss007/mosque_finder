@@ -63,3 +63,5 @@ df = df[columns_to_keep]
 #----------------------------------------------------------------------------------------------
 # Save the CSV file to a new file
 df.to_csv('uk_mosques_modified.csv', index=False)
+df_modified = pd.read_csv("uk_mosques_modified.csv")
+st.write(df)
