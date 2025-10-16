@@ -1,3 +1,0 @@
-import streamlit as st
-
-st.title("Hey Ed! Add mosques here")
