@@ -21,7 +21,7 @@ df1 = df1.replace(0, "N/A")
 df1["Capacity"] = pd.to_numeric(df1["Capacity"], downcast='integer', errors = "coerce")
 
 #----------------------------------------------------------------------------------------------
-# Add search bar and filters to page (lines 26-50)
+# Add search bar and filters to page (lines 26-58)
 #----------------------------------------------------------------------------------------------
 # Search bar
 search_bar = st.text_input(label = "**Search for a specific Masjid**", placeholder="e.g. East London Mosque")
@@ -35,12 +35,19 @@ filter_columns = st.columns(3)
 with filter_columns[0]:
     # Filter for denomination
     denomination_options  = ["Sunni","Shia"]
-    st.selectbox(label="Filter for denomination", options=denomination_options, index=None)
+    denomination_filter = st.selectbox(label="Filter for denomination", options=denomination_options, index=None)
+    if denomination_filter == "Sunni":
+        df1 = df1[df1["Denomination"] == "Sunni"]
+    elif denomination_filter == "Shia":
+        df1 = df1[df1["Denomination"] == "Shia"]
     st.markdown("")
+
 
 with filter_columns[1]:
     # Allow user to select only mosques which have female facilities
-    st.toggle(label="Show all Mosques with Women's facilities", value=False)
+    womens_facilities_filter = st.toggle(label="Show all Mosques with Women's facilities", value=False)
+    if womens_facilities_filter:
+        df1 = df1[df1["Facilities for Women"] == "Yes"]
     st.markdown("")
 
 with filter_columns[2]:
@@ -49,7 +56,7 @@ with filter_columns[2]:
     st.slider(label="Max distance between postcode from Mosque (km)", min_value=0.0, max_value=10.0, value=0.0, step=0.1)
     st.markdown("")
 #----------------------------------------------------------------------------------------------
-# Display CSV information on streamlit in an elegant way (lines 54-101)
+# Display CSV information on streamlit in an elegant way (lines 60-106)
 #----------------------------------------------------------------------------------------------
 # Create pagination feature for displaying mosques
 rows_per_page, columns_per_page =33, 3
@@ -61,6 +68,8 @@ number_of_pages = total_number_of_mosques // mosques_per_page + (1 if total_numb
 # Sidebar pagination control
 st.sidebar.title("Pagination")
 current_page = st.sidebar.number_input("Page:", min_value=1, max_value=number_of_pages, value=1)
+
+st.write(f"Displaying page {current_page} of {number_of_pages}")
 
 # Calculate start and end indices for the current page
 start_index = (current_page - 1) * mosques_per_page
@@ -82,7 +91,6 @@ for i, (_, mosque) in enumerate(current_data.iterrows()):
     capacity = mosque.get('Capacity')
     denomination = mosque.get('Denomination')
     womens_facilities = mosque.get('Facilities for Women')
-    new_one = mosque.get("Capacity_For_Calc")
 
     with col:
         with st.container(border=True, height= 500):
@@ -93,9 +101,6 @@ for i, (_, mosque) in enumerate(current_data.iterrows()):
             st.write(f"**Capacity:** {capacity}")
             st.write(f"**Denomination:** {denomination}")
             st.write(f"**Facilities for Women:** {womens_facilities}")
-            st.write(f"{new_one}")
 
 # Display footer with page info
 st.write(f"Displaying page {current_page} of {number_of_pages}")
-
-search_bar = st.text_input(label="Search for a specific Masjid", placeholder="e.g. East London Mosque")
