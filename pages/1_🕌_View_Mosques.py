@@ -6,36 +6,51 @@ import seaborn as sns
 import os
 import streamlit as st
 
+#----------------------------------------------------------------------------------------------
+# Add tab title + Bring in CSV file and make slight modifications to it (lines 16-21)
+#----------------------------------------------------------------------------------------------
 # Add tab title to page
 st.set_page_config(page_title="View/Search/Filter Mosques")
+
+
 df1 = pd.read_csv("uk_mosques_modified.csv")
-#----------------------------------------------------------------------------------------------
-# Add search bar and filters to page (lines 13-35)
-#----------------------------------------------------------------------------------------------
-# Search bar
-search_bar = st.text_input(label="Search for a specific Masjid", placeholder="e.g. East London Mosque")
 
-# Filter for denomination
-denomination_options  = ["Sunni","Shia"]
-st.selectbox(label="Filter for denomination", options=denomination_options, index=None)
-
-# Allow user to select only mosques which have female facilities
-#st.radio("Only show Mosques which have female facilities", options=["Yes", "Yes, as well as ones in which there is a chance", "Reset"], index=None)
-st.toggle(label="Only show Mosques with womens facilities", value=False)
-# Add slider for Geocoding filter
-postcode_input = st.text_input(label="Enter starting postcode", placeholder="e.g. WC2N 6RH")
-st.slider(label="Max distance between postcode from Mosque (km)", min_value=0.0, max_value=10.0, value=0.0, step=0.1)
-#----------------------------------------------------------------------------------------------
-# Display CSV information on streamlit in an elegant way (lines 18-65)
-#----------------------------------------------------------------------------------------------
-# Bring in CSV file and make slight modifications to it
-#df1 = pd.read_csv("uk_mosques_modified.csv")
 df1 = df1.replace(r'^\s*$', np.nan, regex=True)
 df1 = df1.fillna(0)
 df1 = df1.replace(0, "N/A")
 df1["Capacity"] = pd.to_numeric(df1["Capacity"], downcast='integer', errors = "coerce")
 
+#----------------------------------------------------------------------------------------------
+# Add search bar and filters to page (lines 26-50)
+#----------------------------------------------------------------------------------------------
+# Search bar
+search_bar = st.text_input(label = "**Search for a specific Masjid**", placeholder="e.g. East London Mosque")
 
+st.markdown("")
+st.markdown("")
+st.markdown("**Filters**")
+
+filter_columns = st.columns(3)
+
+with filter_columns[0]:
+    # Filter for denomination
+    denomination_options  = ["Sunni","Shia"]
+    st.selectbox(label="Filter for denomination", options=denomination_options, index=None)
+    st.markdown("")
+
+with filter_columns[1]:
+    # Allow user to select only mosques which have female facilities
+    st.toggle(label="Show all Mosques with Women's facilities", value=False)
+    st.markdown("")
+
+with filter_columns[2]:
+    # Add slider for Geocoding filter
+    postcode_input = st.text_input(label="Enter starting postcode", placeholder="e.g. WC2N 6RH")
+    st.slider(label="Max distance between postcode from Mosque (km)", min_value=0.0, max_value=10.0, value=0.0, step=0.1)
+    st.markdown("")
+#----------------------------------------------------------------------------------------------
+# Display CSV information on streamlit in an elegant way (lines 54-101)
+#----------------------------------------------------------------------------------------------
 # Create pagination feature for displaying mosques
 rows_per_page, columns_per_page =33, 3
 mosques_per_page = rows_per_page * columns_per_page
