@@ -9,7 +9,12 @@ import streamlit as st
 # Add tab title to page
 st.set_page_config(page_title="View/Search/Filter Mosques")
 #----------------------------------------------------------------------------------------------
-# Display CSV information on streamlit in an elegant way (lines 13-65)
+# Add search bar to page (lines 13-35)
+#----------------------------------------------------------------------------------------------
+search_bar = st.text_input(label="Search for a specific Masjid", placeholder="e.g. East London Mosque")
+
+#----------------------------------------------------------------------------------------------
+# Display CSV information on streamlit in an elegant way (lines 18-65)
 #----------------------------------------------------------------------------------------------
 # Bring in CSV file and make slight modifications to it
 df1 = pd.read_csv("uk_mosques_modified.csv")
