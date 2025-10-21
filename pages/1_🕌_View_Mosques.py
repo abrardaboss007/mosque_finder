@@ -19,6 +19,11 @@ import random
 # Add tab title to page
 st.set_page_config(page_title="View/Search/Filter Mosques")
 
+if 'selected_mosque_index' not in st.session_state:
+    st.session_state.selected_mosque_index = None
+
+def reset_selected_mosque():
+    st.session_state.selected_mosque_index = None
 
 df1 = pd.read_csv("uk_mosques_modified.csv")
 
@@ -130,7 +135,7 @@ with filter_columns[2]:
 # Display CSV information on streamlit in an elegant way (lines 60-106)
 #----------------------------------------------------------------------------------------------
 # Create pagination feature for displaying mosques
-rows_per_page, columns_per_page =33, 3
+rows_per_page, columns_per_page =50, 2
 mosques_per_page = rows_per_page * columns_per_page
 total_number_of_mosques = len(df1)
 
@@ -140,7 +145,6 @@ number_of_pages = total_number_of_mosques // mosques_per_page + (1 if total_numb
 st.sidebar.title("Pagination")
 current_page = st.sidebar.number_input("Page:", min_value=1, max_value=number_of_pages, value=1)
 
-st.write(f"Displaying page {current_page} of {number_of_pages}")
 
 # Calculate start and end indices for the current page
 start_index = (current_page - 1) * mosques_per_page
@@ -150,68 +154,68 @@ current_data = df1.iloc[start_index:end_index]
 # Create a grid layout to display mosques
 columns = st.columns(columns_per_page)
 
-key_num = 1
-def directions_button():
-    global key_num
-    button = st.button(label = "Get directions", type= "primary", key = key_num)
-    key_num += 1
-    global df1
-    df1["ID"] = key_num
-    if button:
-        if postcode_input:
-            df1 = df1[df1["ID"] == key_num]
-            return df1
-            st.write("Heres the directions")
-        else:
-            st.write("Input postcode please")
-
 # Loop over mosques on current page and display info in columns
-for i, (_, mosque) in enumerate(current_data.iterrows()):
-    col = columns[i % columns_per_page]  # Cycle through columns
+if st.session_state.selected_mosque_index is None:
+    st.write(f"Displaying page {current_page} of {number_of_pages}")
+    for i, (_, mosque) in enumerate(current_data.iterrows()):
+        col = columns[i % columns_per_page]  # Cycle through columns
 
-    # Extract fields to display
-    name = mosque.get('Mosque Name')
-    city = mosque.get('City')
-    postcode = mosque.get('Postcode')
-    telephone = mosque.get('Telephone Number')
-    capacity = mosque.get('Capacity')
-    denomination = mosque.get('Denomination')
-    womens_facilities = mosque.get('Facilities for Women')
+        # Extract fields to display
+        name = mosque.get('Mosque Name')
+        city = mosque.get('City')
+        postcode = mosque.get('Postcode')
+        telephone = mosque.get('Telephone Number')
+        capacity = mosque.get('Capacity')
+        denomination = mosque.get('Denomination')
+        womens_facilities = mosque.get('Facilities for Women')
 
-    with col:
-        with st.container(border=True, height= 500):
-            st.markdown(f"### {name}")
-            st.write(f"**City:** {city}")
-            st.write(f"**Postcode:** {postcode}")
-            st.write(f"**Telephone:** {telephone}")
-            st.write(f"**Capacity:** {capacity}")
-            st.write(f"**Denomination:** {denomination}")
-            st.write(f"**Facilities for Women:** {womens_facilities}")
-            # directions_button = st.button(label= "Get directions", type="primary", key=numb)
-            # numb+=1
-            # if directions_button:
-            #     st.markdown("hey")
-            directions_button()
-# Display footer with page info
-st.write(f"Displaying page {current_page} of {number_of_pages}")
+        with col:
+            with st.container(border=True, height= 500):
+                st.markdown(f"### {name}")
+                st.write(f"**City:** {city}")
+                st.write(f"**Postcode:** {postcode}")
+                st.write(f"**Telephone:** {telephone}")
+                st.write(f"**Capacity:** {capacity}")
+                st.write(f"**Denomination:** {denomination}")
+                st.write(f"**Facilities for Women:** {womens_facilities}")
+                
+                directions_button = st.button(label= "Get directions", type="primary", key=f"get_directions_{mosque['Mosque Name']}_{i}")
+                if directions_button:
+                    if postcode_input:
+                        st.session_state.selected_mosque_index = i
+                    else:
+                        st.warning("Please input postcode above first please")
+    st.write(f"Displaying page {current_page} of {number_of_pages}")
+                    
+else:
+    with columns[0]:
+        with st.container(border = True, width = 300, height = 500):
+            mosque = df1.iloc[st.session_state.selected_mosque_index]
 
-api_key = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImM2YWVmYjliNzkwZjQ1NjViNTQ3OGRkYWYyOWMzNmNmIiwiaCI6Im11cm11cjY0In0="
-client = ors.Client(key= api_key)
+            st.markdown(f"### {mosque['Mosque Name']}")
+            st.write(f"**City:** {mosque['City']}")
+            st.write(f"**Postcode:** {mosque['Postcode']}")
+            st.write(f"**Telephone:** {mosque['Telephone Number']}")
+            st.write(f"**Capacity:** {mosque['Capacity']}")
+            st.write(f"**Denomination:** {mosque['Denomination']}")
+            st.write(f"**Facilities for Women:** {mosque['Facilities for Women']}")
 
-m = folium.Map(location=list(reversed([-77.0362619, 38.897475])), tiles="cartodbpositron", zoom_start=13)
+            st.success("Directions -->")  # Replace with your actual directions logic
+    
+    with columns[1]:
+        api_key = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImM2YWVmYjliNzkwZjQ1NjViNTQ3OGRkYWYyOWMzNmNmIiwiaCI6Im11cm11cjY0In0="
+        client = ors.Client(key= api_key)
 
-# white house to the pentagon
-coords = [[-77.0362619, 38.897475], [-77.0584556, 38.871861]]
+        m = folium.Map(location=list(reversed([-77.0362619, 38.897475])), tiles="cartodbpositron", zoom_start=13)
 
-route = client.directions(coordinates=coords,
-                          profile='foot-walking',
-                          format='geojson')
+        # white house to the pentagon
+        coords = [[-77.0362619, 38.897475], [-77.0584556, 38.871861]]
 
-waypoints = list(dict.fromkeys(reduce(operator.concat, list(map(lambda step: step['way_points'], route['features'][0]['properties']['segments'][0]['steps'])))))
+        route = client.directions(coordinates=coords,
+                                profile='foot-walking',
+                                format='geojson')
 
-folium.PolyLine(locations=[list(reversed(coord)) for coord in route['features'][0]['geometry']['coordinates']], color="blue").add_to(m)
+        waypoints = list(dict.fromkeys(reduce(operator.concat, list(map(lambda step: step['way_points'], route['features'][0]['properties']['segments'][0]['steps'])))))
 
-folium.PolyLine(locations=[list(reversed(route['features'][0]['geometry']['coordinates'][index])) for index in waypoints], color="red").add_to(m)
-
-st.header("EV Charging Stations in the Vancouver", divider=True)
-st.components.v1.html(folium.Figure().add_child(m).render(), height=500)
+        folium.PolyLine(locations=[list(reversed(coord)) for coord in route['features'][0]['geometry']['coordinates']], color="blue").add_to(m)
+        st.components.v1.html(folium.Figure().add_child(m).render(), height=500)
