@@ -6,8 +6,13 @@ import seaborn as sns
 import os
 import streamlit as st
 import pgeocode
+import openrouteservice as ors
+import folium
+import operator
+from functools import reduce
 from sklearn.metrics.pairwise import haversine_distances
 from math import radians
+import random
 #----------------------------------------------------------------------------------------------
 # Add tab title + Bring in CSV file and make slight modifications to it (lines 16-21)
 #----------------------------------------------------------------------------------------------
@@ -21,7 +26,8 @@ df1 = df1.replace(r'^\s*$', np.nan, regex=True)
 df1 = df1.fillna(0)
 df1 = df1.replace(0, "N/A")
 df1["Capacity"] = pd.to_numeric(df1["Capacity"], downcast='integer', errors = "coerce")
-
+df1["Longitude"] = pd.to_numeric(df1["Longitude"], downcast='float', errors = "coerce")
+df1["Latitude"] = pd.to_numeric(df1["Latitude"], downcast='float', errors = "coerce")
 #----------------------------------------------------------------------------------------------
 # Add search bar and filters to page (lines 26-58)
 #----------------------------------------------------------------------------------------------
@@ -59,18 +65,15 @@ with filter_columns[1]:
         df1 = df1[df1["Facilities for Women"] == "Yes"]
     st.markdown("")
 
-# Geocoding filter
-# Create function for calculating the distance between two coordinates
 # def geo_distance(input_lat, input_long, mosque_lat, mosque_long):
 #     input_coordinates = [radians(input_lat), radians(input_long)]
 #     mosque_coordinates = [radians(mosque_lat), radians(mosque_long)]
 #     distance = haversine_distances([input_coordinates, mosque_coordinates])
 #     distance = distance * 6371
 #     return abs(distance[1,0])
-from math import radians
-from sklearn.metrics.pairwise import haversine_distances
-import numpy as np
 
+# Geocoding filter
+# Create function for calculating the distance between two coordinates
 def geo_distance_vectorized(input_lat, input_long, mosque_lats, mosque_longs):
     # Convert all degrees to radians:
     input_coord = np.array([[radians(input_lat), radians(input_long)]])
@@ -147,6 +150,21 @@ current_data = df1.iloc[start_index:end_index]
 # Create a grid layout to display mosques
 columns = st.columns(columns_per_page)
 
+key_num = 1
+def directions_button():
+    global key_num
+    button = st.button(label = "Get directions", type= "primary", key = key_num)
+    key_num += 1
+    global df1
+    df1["ID"] = key_num
+    if button:
+        if postcode_input:
+            df1 = df1[df1["ID"] == key_num]
+            return df1
+            st.write("Heres the directions")
+        else:
+            st.write("Input postcode please")
+
 # Loop over mosques on current page and display info in columns
 for i, (_, mosque) in enumerate(current_data.iterrows()):
     col = columns[i % columns_per_page]  # Cycle through columns
@@ -169,6 +187,31 @@ for i, (_, mosque) in enumerate(current_data.iterrows()):
             st.write(f"**Capacity:** {capacity}")
             st.write(f"**Denomination:** {denomination}")
             st.write(f"**Facilities for Women:** {womens_facilities}")
-
+            # directions_button = st.button(label= "Get directions", type="primary", key=numb)
+            # numb+=1
+            # if directions_button:
+            #     st.markdown("hey")
+            directions_button()
 # Display footer with page info
 st.write(f"Displaying page {current_page} of {number_of_pages}")
+
+api_key = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImM2YWVmYjliNzkwZjQ1NjViNTQ3OGRkYWYyOWMzNmNmIiwiaCI6Im11cm11cjY0In0="
+client = ors.Client(key= api_key)
+
+m = folium.Map(location=list(reversed([-77.0362619, 38.897475])), tiles="cartodbpositron", zoom_start=13)
+
+# white house to the pentagon
+coords = [[-77.0362619, 38.897475], [-77.0584556, 38.871861]]
+
+route = client.directions(coordinates=coords,
+                          profile='foot-walking',
+                          format='geojson')
+
+waypoints = list(dict.fromkeys(reduce(operator.concat, list(map(lambda step: step['way_points'], route['features'][0]['properties']['segments'][0]['steps'])))))
+
+folium.PolyLine(locations=[list(reversed(coord)) for coord in route['features'][0]['geometry']['coordinates']], color="blue").add_to(m)
+
+folium.PolyLine(locations=[list(reversed(route['features'][0]['geometry']['coordinates'][index])) for index in waypoints], color="red").add_to(m)
+
+st.header("EV Charging Stations in the Vancouver", divider=True)
+st.components.v1.html(folium.Figure().add_child(m).render(), height=500)
