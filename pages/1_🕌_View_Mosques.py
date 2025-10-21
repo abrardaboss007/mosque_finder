@@ -70,13 +70,6 @@ with filter_columns[1]:
         df1 = df1[df1["Facilities for Women"] == "Yes"]
     st.markdown("")
 
-# def geo_distance(input_lat, input_long, mosque_lat, mosque_long):
-#     input_coordinates = [radians(input_lat), radians(input_long)]
-#     mosque_coordinates = [radians(mosque_lat), radians(mosque_long)]
-#     distance = haversine_distances([input_coordinates, mosque_coordinates])
-#     distance = distance * 6371
-#     return abs(distance[1,0])
-
 # Geocoding filter
 # Create function for calculating the distance between two coordinates
 def geo_distance_vectorized(input_lat, input_long, mosque_lats, mosque_longs):
@@ -88,24 +81,7 @@ def geo_distance_vectorized(input_lat, input_long, mosque_lats, mosque_longs):
     distances = haversine_distances(input_coord, mosque_coords_rad)
     # distances are in radians, multiply by Earth radius in km to get km
     distances_km = distances[0] * 6371
-    return distances_km
-
-# with filter_columns[2]:
-#     postcode_input = st.text_input(label="Enter max distance between postcode from Mosque", placeholder="e.g. WC2N 6RH")
-#     geocode_slider = st.slider(label="Max distance between postcode from Mosque (km)", min_value=0.0, max_value=10.0, value=0.0, step=0.1)
-#     geo_filter_check = st.checkbox(label="Activate geocode filter")
-#     if geocode_slider:
-#         if postcode_input:
-#             nomi = pgeocode.Nominatim('gb')
-#             postcode_lat = nomi.query_postal_code(postcode_input).latitude
-#             postcode_long = nomi.query_postal_code(postcode_input).longitude
-#             distance = geo_distance(postcode_lat, postcode_long, df1["Latitude"], df1["Longitude"])
-#             if geo_filter_check:
-#                 if distance <= geocode_slider:
-#                     df1 = 
-
-#         else:
-#             st.write("Please enter your postcode first...")
+    return float(distances_km)
 
 with filter_columns[2]:
     postcode_input = st.text_input(label="Enter postcode", placeholder="e.g. WC2N 6RH")
@@ -131,6 +107,7 @@ with filter_columns[2]:
         else:
             st.info("Please enter your postcode first...")
     st.markdown("")
+    
 #----------------------------------------------------------------------------------------------
 # Display CSV information on streamlit in an elegant way (lines 60-106)
 #----------------------------------------------------------------------------------------------
