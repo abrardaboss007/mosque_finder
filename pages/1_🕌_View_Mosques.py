@@ -14,7 +14,7 @@ from sklearn.metrics.pairwise import haversine_distances
 from math import radians
 import random
 #----------------------------------------------------------------------------------------------
-# Add tab title + Bring in CSV file and make slight modifications to it (lines 19-21)
+# Add tab title + Bring in CSV file and make slight modifications to it (lines 19-31)
 #----------------------------------------------------------------------------------------------
 # Add tab title to page
 st.set_page_config(page_title="View/Search/Filter Mosques")
@@ -104,7 +104,7 @@ with filter_columns[2]:
     st.markdown("")
 
 #----------------------------------------------------------------------------------------------
-# Display CSV information on streamlit in an elegant way as well as bring in map (lines 109-194)
+# Display CSV information on streamlit in an elegant way as well as bring in map (lines 109-201)
 #----------------------------------------------------------------------------------------------
 # Create pagination feature for displaying mosques
 rows_per_page, columns_per_page =50, 2
@@ -171,7 +171,6 @@ else:
             st.write(f"**Capacity:** {mosque['Capacity']}")
             st.write(f"**Denomination:** {mosque['Denomination']}")
             st.write(f"**Facilities for Women:** {mosque['Facilities for Women']}")
-            #st.success("blue line = travelling by foot  \n red line = travelling by car")
             st.markdown(
     """
     <p style="color:blue; margin:0;">blue line = travelling by foot</p>
