@@ -14,15 +14,12 @@ from sklearn.metrics.pairwise import haversine_distances
 from math import radians
 import random
 #----------------------------------------------------------------------------------------------
-# Add tab title + Bring in CSV file and make slight modifications to it (lines 16-21)
+# Add tab title + Bring in CSV file and make slight modifications to it (lines 19-21)
 #----------------------------------------------------------------------------------------------
 # Add tab title to page
 st.set_page_config(page_title="View/Search/Filter Mosques")
 
 if 'selected_mosque_index' not in st.session_state:
-    st.session_state.selected_mosque_index = None
-
-def reset_selected_mosque():
     st.session_state.selected_mosque_index = None
 
 df1 = pd.read_csv("uk_mosques_modified.csv")
@@ -34,7 +31,7 @@ df1["Capacity"] = pd.to_numeric(df1["Capacity"], downcast='integer', errors = "c
 df1["Longitude"] = pd.to_numeric(df1["Longitude"], downcast='float', errors = "coerce")
 df1["Latitude"] = pd.to_numeric(df1["Latitude"], downcast='float', errors = "coerce")
 #----------------------------------------------------------------------------------------------
-# Add search bar and filters to page (lines 26-58)
+# Add search bar and filters to page (lines 36-106)
 #----------------------------------------------------------------------------------------------
 # Search bar
 search_bar = st.text_input(label = "**Search for a specific Masjid**", placeholder="e.g. East London Mosque")
@@ -81,35 +78,33 @@ def geo_distance_vectorized(input_lat, input_long, mosque_lats, mosque_longs):
     distances = haversine_distances(input_coord, mosque_coords_rad)
     # distances are in radians, multiply by Earth radius in km to get km
     distances_km = distances[0] * 6371
-    return float(distances_km)
+    return distances_km
 
 with filter_columns[2]:
     postcode_input = st.text_input(label="Enter postcode", placeholder="e.g. WC2N 6RH")
-    max_distance = st.slider(label="Max distance from postcode to mosque (km)", min_value=0.0, max_value=10.0, value=5.0, step=0.1)
-    geo_filter_check = st.checkbox(label="Activate geocode filter")
+    max_distance = st.slider(label="Max distance from postcode to mosque (km)", min_value=0.0, max_value=10.0, value=None, step=0.1)
+    #geo_filter_check = st.checkbox(label="Show Map when I click get directions")
 
-    if geo_filter_check:
-        if postcode_input:
-            nomi = pgeocode.Nominatim('gb')
-            postcode_lat = nomi.query_postal_code(postcode_input).latitude
-            postcode_long = nomi.query_postal_code(postcode_input).longitude
+    if postcode_input:
+        nomi = pgeocode.Nominatim('gb')
+        postcode_lat = nomi.query_postal_code(postcode_input).latitude
+        postcode_long = nomi.query_postal_code(postcode_input).longitude
 
-            if postcode_lat is None or postcode_long is None:
-                st.warning("Invalid postcode, please enter a valid UK postcode.")
-            else:
-                # Compute distances for all mosques
-                distances = geo_distance_vectorized(postcode_lat, postcode_long, df1["Latitude"].values, df1["Longitude"].values)
-                # Filter DataFrame to only mosques within max_distance
-                df1 = df1[distances <= max_distance]
+        if postcode_lat is None or postcode_long is None:
+            st.warning("Invalid postcode, please enter a valid UK postcode.")
+        elif max_distance:
+            # Compute distances for all mosques
+            distances = geo_distance_vectorized(postcode_lat, postcode_long, df1["Latitude"].values, df1["Longitude"].values)
+            # Filter DataFrame to only mosques within max_distance
+            df1 = df1[distances <= max_distance]
+            st.write(f"Found {len(df1)} mosques within {max_distance} km of {postcode_input}")
+    elif max_distance and not postcode_input:
+        st.info("Please enter your postcode first...")
 
-                st.write(f"Found {len(df1)} mosques within {max_distance} km of {postcode_input}")
-                
-        else:
-            st.info("Please enter your postcode first...")
     st.markdown("")
-    
+
 #----------------------------------------------------------------------------------------------
-# Display CSV information on streamlit in an elegant way (lines 60-106)
+# Display CSV information on streamlit in an elegant way as well as bring in map (lines 109-194)
 #----------------------------------------------------------------------------------------------
 # Create pagination feature for displaying mosques
 rows_per_page, columns_per_page =50, 2
@@ -161,7 +156,7 @@ if st.session_state.selected_mosque_index is None:
                     if postcode_input:
                         st.session_state.selected_mosque_index = i
                     else:
-                        st.warning("Please input postcode above first please")
+                        st.warning("Please input postcode at the top")
     st.write(f"Displaying page {current_page} of {number_of_pages}")
                     
 else:
@@ -176,17 +171,17 @@ else:
             st.write(f"**Capacity:** {mosque['Capacity']}")
             st.write(f"**Denomination:** {mosque['Denomination']}")
             st.write(f"**Facilities for Women:** {mosque['Facilities for Women']}")
+            st.success("Directions --->")
 
-            st.success("Directions -->")  # Replace with your actual directions logic
-    
     with columns[1]:
         api_key = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImM2YWVmYjliNzkwZjQ1NjViNTQ3OGRkYWYyOWMzNmNmIiwiaCI6Im11cm11cjY0In0="
         client = ors.Client(key= api_key)
 
-        m = folium.Map(location=list(reversed([-77.0362619, 38.897475])), tiles="cartodbpositron", zoom_start=13)
+        mosque_coordinates = [float(mosque["Longitude"]), float(mosque["Latitude"])]
+        input_coordinates = [float(postcode_long), float(postcode_lat)]
+        coords = [mosque_coordinates, input_coordinates]
 
-        # white house to the pentagon
-        coords = [[-77.0362619, 38.897475], [-77.0584556, 38.871861]]
+        m = folium.Map(location=list(reversed(mosque_coordinates)), tiles="cartodbpositron", zoom_start=13)
 
         route = client.directions(coordinates=coords,
                                 profile='foot-walking',
