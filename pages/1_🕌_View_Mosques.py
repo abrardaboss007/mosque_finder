@@ -6,14 +6,21 @@ import seaborn as sns
 import os
 import streamlit as st
 import pgeocode
+import openrouteservice as ors
+import folium
+import operator
+from functools import reduce
 from sklearn.metrics.pairwise import haversine_distances
 from math import radians
+import random
 #----------------------------------------------------------------------------------------------
-# Add tab title + Bring in CSV file and make slight modifications to it (lines 16-21)
+# Add tab title + Bring in CSV file and make slight modifications to it (lines 19-21)
 #----------------------------------------------------------------------------------------------
 # Add tab title to page
 st.set_page_config(page_title="View/Search/Filter Mosques")
 
+if 'selected_mosque_index' not in st.session_state:
+    st.session_state.selected_mosque_index = None
 
 df1 = pd.read_csv("uk_mosques_modified.csv")
 
@@ -21,9 +28,10 @@ df1 = df1.replace(r'^\s*$', np.nan, regex=True)
 df1 = df1.fillna(0)
 df1 = df1.replace(0, "N/A")
 df1["Capacity"] = pd.to_numeric(df1["Capacity"], downcast='integer', errors = "coerce")
-
+df1["Longitude"] = pd.to_numeric(df1["Longitude"], downcast='float', errors = "coerce")
+df1["Latitude"] = pd.to_numeric(df1["Latitude"], downcast='float', errors = "coerce")
 #----------------------------------------------------------------------------------------------
-# Add search bar and filters to page (lines 26-58)
+# Add search bar and filters to page (lines 36-106)
 #----------------------------------------------------------------------------------------------
 # Search bar
 search_bar = st.text_input(label = "**Search for a specific Masjid**", placeholder="e.g. East London Mosque")
@@ -61,16 +69,6 @@ with filter_columns[1]:
 
 # Geocoding filter
 # Create function for calculating the distance between two coordinates
-# def geo_distance(input_lat, input_long, mosque_lat, mosque_long):
-#     input_coordinates = [radians(input_lat), radians(input_long)]
-#     mosque_coordinates = [radians(mosque_lat), radians(mosque_long)]
-#     distance = haversine_distances([input_coordinates, mosque_coordinates])
-#     distance = distance * 6371
-#     return abs(distance[1,0])
-from math import radians
-from sklearn.metrics.pairwise import haversine_distances
-import numpy as np
-
 def geo_distance_vectorized(input_lat, input_long, mosque_lats, mosque_longs):
     # Convert all degrees to radians:
     input_coord = np.array([[radians(input_lat), radians(input_long)]])
@@ -82,52 +80,34 @@ def geo_distance_vectorized(input_lat, input_long, mosque_lats, mosque_longs):
     distances_km = distances[0] * 6371
     return distances_km
 
-# with filter_columns[2]:
-#     postcode_input = st.text_input(label="Enter max distance between postcode from Mosque", placeholder="e.g. WC2N 6RH")
-#     geocode_slider = st.slider(label="Max distance between postcode from Mosque (km)", min_value=0.0, max_value=10.0, value=0.0, step=0.1)
-#     geo_filter_check = st.checkbox(label="Activate geocode filter")
-#     if geocode_slider:
-#         if postcode_input:
-#             nomi = pgeocode.Nominatim('gb')
-#             postcode_lat = nomi.query_postal_code(postcode_input).latitude
-#             postcode_long = nomi.query_postal_code(postcode_input).longitude
-#             distance = geo_distance(postcode_lat, postcode_long, df1["Latitude"], df1["Longitude"])
-#             if geo_filter_check:
-#                 if distance <= geocode_slider:
-#                     df1 = 
-
-#         else:
-#             st.write("Please enter your postcode first...")
-
 with filter_columns[2]:
     postcode_input = st.text_input(label="Enter postcode", placeholder="e.g. WC2N 6RH")
-    max_distance = st.slider(label="Max distance from postcode to mosque (km)", min_value=0.0, max_value=10.0, value=5.0, step=0.1)
-    geo_filter_check = st.checkbox(label="Activate geocode filter")
+    max_distance = st.slider(label="Max distance from postcode to mosque (km)", min_value=0.0, max_value=10.0, value=None, step=0.1)
+    #geo_filter_check = st.checkbox(label="Show Map when I click get directions")
 
-    if geo_filter_check:
-        if postcode_input:
-            nomi = pgeocode.Nominatim('gb')
-            postcode_lat = nomi.query_postal_code(postcode_input).latitude
-            postcode_long = nomi.query_postal_code(postcode_input).longitude
+    if postcode_input:
+        nomi = pgeocode.Nominatim('gb')
+        postcode_lat = nomi.query_postal_code(postcode_input).latitude
+        postcode_long = nomi.query_postal_code(postcode_input).longitude
 
-            if postcode_lat is None or postcode_long is None:
-                st.warning("Invalid postcode, please enter a valid UK postcode.")
-            else:
-                # Compute distances for all mosques
-                distances = geo_distance_vectorized(postcode_lat, postcode_long, df1["Latitude"].values, df1["Longitude"].values)
-                # Filter DataFrame to only mosques within max_distance
-                df1 = df1[distances <= max_distance]
+        if postcode_lat is None or postcode_long is None:
+            st.warning("Invalid postcode, please enter a valid UK postcode.")
+        elif max_distance:
+            # Compute distances for all mosques
+            distances = geo_distance_vectorized(postcode_lat, postcode_long, df1["Latitude"].values, df1["Longitude"].values)
+            # Filter DataFrame to only mosques within max_distance
+            df1 = df1[distances <= max_distance]
+            st.write(f"Found {len(df1)} mosques within {max_distance} km of {postcode_input}")
+    elif max_distance and not postcode_input:
+        st.info("Please enter your postcode first...")
 
-                st.write(f"Found {len(df1)} mosques within {max_distance} km of {postcode_input}")
-                
-        else:
-            st.info("Please enter your postcode first...")
     st.markdown("")
+
 #----------------------------------------------------------------------------------------------
-# Display CSV information on streamlit in an elegant way (lines 60-106)
+# Display CSV information on streamlit in an elegant way as well as bring in map (lines 109-194)
 #----------------------------------------------------------------------------------------------
 # Create pagination feature for displaying mosques
-rows_per_page, columns_per_page =33, 3
+rows_per_page, columns_per_page =50, 2
 mosques_per_page = rows_per_page * columns_per_page
 total_number_of_mosques = len(df1)
 
@@ -137,7 +117,6 @@ number_of_pages = total_number_of_mosques // mosques_per_page + (1 if total_numb
 st.sidebar.title("Pagination")
 current_page = st.sidebar.number_input("Page:", min_value=1, max_value=number_of_pages, value=1)
 
-st.write(f"Displaying page {current_page} of {number_of_pages}")
 
 # Calculate start and end indices for the current page
 start_index = (current_page - 1) * mosques_per_page
@@ -148,27 +127,67 @@ current_data = df1.iloc[start_index:end_index]
 columns = st.columns(columns_per_page)
 
 # Loop over mosques on current page and display info in columns
-for i, (_, mosque) in enumerate(current_data.iterrows()):
-    col = columns[i % columns_per_page]  # Cycle through columns
+if st.session_state.selected_mosque_index is None:
+    st.write(f"Displaying page {current_page} of {number_of_pages}")
+    for i, (_, mosque) in enumerate(current_data.iterrows()):
+        col = columns[i % columns_per_page]  # Cycle through columns
 
-    # Extract fields to display
-    name = mosque.get('Mosque Name')
-    city = mosque.get('City')
-    postcode = mosque.get('Postcode')
-    telephone = mosque.get('Telephone Number')
-    capacity = mosque.get('Capacity')
-    denomination = mosque.get('Denomination')
-    womens_facilities = mosque.get('Facilities for Women')
+        # Extract fields to display
+        name = mosque.get('Mosque Name')
+        city = mosque.get('City')
+        postcode = mosque.get('Postcode')
+        telephone = mosque.get('Telephone Number')
+        capacity = mosque.get('Capacity')
+        denomination = mosque.get('Denomination')
+        womens_facilities = mosque.get('Facilities for Women')
 
-    with col:
-        with st.container(border=True, height= 500):
-            st.markdown(f"### {name}")
-            st.write(f"**City:** {city}")
-            st.write(f"**Postcode:** {postcode}")
-            st.write(f"**Telephone:** {telephone}")
-            st.write(f"**Capacity:** {capacity}")
-            st.write(f"**Denomination:** {denomination}")
-            st.write(f"**Facilities for Women:** {womens_facilities}")
+        with col:
+            with st.container(border=True, height= 500):
+                st.markdown(f"### {name}")
+                st.write(f"**City:** {city}")
+                st.write(f"**Postcode:** {postcode}")
+                st.write(f"**Telephone:** {telephone}")
+                st.write(f"**Capacity:** {capacity}")
+                st.write(f"**Denomination:** {denomination}")
+                st.write(f"**Facilities for Women:** {womens_facilities}")
+                
+                directions_button = st.button(label= "Get directions", type="primary", key=f"get_directions_{mosque['Mosque Name']}_{i}")
+                if directions_button:
+                    if postcode_input:
+                        st.session_state.selected_mosque_index = i
+                    else:
+                        st.warning("Please input postcode at the top")
+    st.write(f"Displaying page {current_page} of {number_of_pages}")
+                    
+else:
+    with columns[0]:
+        with st.container(border = True, width = 300, height = 500):
+            mosque = df1.iloc[st.session_state.selected_mosque_index]
 
-# Display footer with page info
-st.write(f"Displaying page {current_page} of {number_of_pages}")
+            st.markdown(f"### {mosque['Mosque Name']}")
+            st.write(f"**City:** {mosque['City']}")
+            st.write(f"**Postcode:** {mosque['Postcode']}")
+            st.write(f"**Telephone:** {mosque['Telephone Number']}")
+            st.write(f"**Capacity:** {mosque['Capacity']}")
+            st.write(f"**Denomination:** {mosque['Denomination']}")
+            st.write(f"**Facilities for Women:** {mosque['Facilities for Women']}")
+            st.success("Directions --->")
+
+    with columns[1]:
+        api_key = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImM2YWVmYjliNzkwZjQ1NjViNTQ3OGRkYWYyOWMzNmNmIiwiaCI6Im11cm11cjY0In0="
+        client = ors.Client(key= api_key)
+
+        mosque_coordinates = [float(mosque["Longitude"]), float(mosque["Latitude"])]
+        input_coordinates = [float(postcode_long), float(postcode_lat)]
+        coords = [mosque_coordinates, input_coordinates]
+
+        m = folium.Map(location=list(reversed(mosque_coordinates)), tiles="cartodbpositron", zoom_start=13)
+
+        route = client.directions(coordinates=coords,
+                                profile='foot-walking',
+                                format='geojson')
+
+        waypoints = list(dict.fromkeys(reduce(operator.concat, list(map(lambda step: step['way_points'], route['features'][0]['properties']['segments'][0]['steps'])))))
+
+        folium.PolyLine(locations=[list(reversed(coord)) for coord in route['features'][0]['geometry']['coordinates']], color="blue").add_to(m)
+        st.components.v1.html(folium.Figure().add_child(m).render(), height=500)
