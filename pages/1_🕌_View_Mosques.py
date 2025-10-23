@@ -30,6 +30,7 @@ df1 = df1.replace(0, "N/A")
 df1["Capacity"] = pd.to_numeric(df1["Capacity"], downcast='integer', errors = "coerce")
 df1["Longitude"] = pd.to_numeric(df1["Longitude"], downcast='float', errors = "coerce")
 df1["Latitude"] = pd.to_numeric(df1["Latitude"], downcast='float', errors = "coerce")
+df1 = df1.fillna(0)
 #----------------------------------------------------------------------------------------------
 # Add search bar and filters to page (lines 36-106)
 #----------------------------------------------------------------------------------------------

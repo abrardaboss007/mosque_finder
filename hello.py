@@ -50,11 +50,14 @@ df["Facilities for Women"] = np.where(
 # Create a new column that mentions the capacity of the mosque as string data type for display purposes
 df['Capacity'] = df['Miscellaneous Info'].str.extract(r'(\d+)')
 df = df.replace(r'^\s*$', np.nan, regex=True)
-df  = df.fillna("N/A")
+df = df.fillna(0)
+df = df.replace(0, "N/A")
 
 # Recreate the capacity column which can be used for calculations behind the scenes with integer data type
 df['Capacity_For_Calc'] = pd.to_numeric(df['Capacity'], downcast="integer", errors='coerce')
-
+df["Longitude"] = pd.to_numeric(df["Longitude"], downcast='float', errors = "coerce")
+df["Latitude"] = pd.to_numeric(df["Latitude"], downcast='float', errors = "coerce")
+df = df.fillna(0)
 # Remove unnecessary columns
 columns_to_keep = ["Longitude","Latitude","Mosque Name", "Denomination", "Capacity", "Facilities for Women", "Address", "City", "Postcode", "Telephone Number", "Capacity_For_Calc"]
 df = df[columns_to_keep]
