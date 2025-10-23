@@ -18,7 +18,7 @@ df2["Latitude"] = pd.to_numeric(df2["Latitude"], errors="coerce")
 
 st.title("Hey Ed! Add mosques here")
 
-with st.form("my form", clear_on_submit=True):
+with st.form("Add mosque", clear_on_submit=True):
     nomi = pgeocode.Nominatim('gb')
     mosque_name =  st.text_input("Mosque name **(Required)**")
     mosque_address = st.text_input("Mosque Address **(Required)**")
