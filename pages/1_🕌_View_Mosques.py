@@ -104,7 +104,7 @@ with filter_columns[2]:
     st.markdown("")
 
 #----------------------------------------------------------------------------------------------
-# Display CSV information on streamlit in an elegant way as well as bring in map (lines 109-204)
+# Display CSV information on streamlit in an elegant way as well as bring in map (lines 109-205)
 #----------------------------------------------------------------------------------------------
 # Create pagination feature for displaying mosques
 rows_per_page, columns_per_page =50, 2
@@ -134,6 +134,7 @@ if st.session_state.selected_mosque_index is None:
 
         # Extract fields to display
         name = mosque.get('Mosque Name')
+        address = mosque.get('Address')
         city = mosque.get('City')
         postcode = mosque.get('Postcode')
         telephone = mosque.get('Telephone Number')
@@ -190,7 +191,7 @@ else:
         input_coordinates = [float(postcode_long), float(postcode_lat)]
         coords = [mosque_coordinates, input_coordinates]
 
-        m = folium.Map(location=list(reversed(mosque_coordinates)), tiles="cartodbpositron", zoom_start=13)
+        map = folium.Map(location=list(reversed(mosque_coordinates)), tiles="cartodbpositron", zoom_start=13)
 
         route1 = client.directions(coordinates=coords,profile='foot-walking',format='geojson')
         route2 = client.directions(coordinates=coords,profile='driving-car',format='geojson')
@@ -198,7 +199,7 @@ else:
         waypoints1 = list(dict.fromkeys(reduce(operator.concat, list(map(lambda step: step['way_points'], route1['features'][0]['properties']['segments'][0]['steps'])))))
         waypoints2 = list(dict.fromkeys(reduce(operator.concat, list(map(lambda step: step['way_points'], route2['features'][0]['properties']['segments'][0]['steps'])))))
         
-        folium.PolyLine(locations=[list(reversed(coord)) for coord in route1['features'][0]['geometry']['coordinates']], color="blue").add_to(m)
-        folium.PolyLine(locations=[list(reversed(coord)) for coord in route2['features'][0]['geometry']['coordinates']], color="red").add_to(m)
+        folium.PolyLine(locations=[list(reversed(coord)) for coord in route1['features'][0]['geometry']['coordinates']], color="blue").add_to(map)
+        folium.PolyLine(locations=[list(reversed(coord)) for coord in route2['features'][0]['geometry']['coordinates']], color="red").add_to(map)
         
-        st.components.v1.html(folium.Figure().add_child(m).render(), height=500)
+        st.components.v1.html(folium.Figure().add_child(map).render(), height=500)
