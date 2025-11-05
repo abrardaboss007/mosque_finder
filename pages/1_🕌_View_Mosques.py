@@ -22,6 +22,7 @@ st.set_page_config(page_title="View/Search/Filter Mosques")
 if 'selected_mosque_index' not in st.session_state:
     st.session_state.selected_mosque_index = None
 
+# Bring in and modify CSV file
 df1 = pd.read_csv("uk_mosques_modified.csv")
 
 df1 = df1.replace(r'^\s*$', np.nan, regex=True)
@@ -32,7 +33,7 @@ df1["Longitude"] = pd.to_numeric(df1["Longitude"], downcast='float', errors = "c
 df1["Latitude"] = pd.to_numeric(df1["Latitude"], downcast='float', errors = "coerce")
 df1 = df1.fillna(0)
 #----------------------------------------------------------------------------------------------
-# Add search bar and filters to page (lines 36-106)
+# Add search bar and filters to page (lines 38-106)
 #----------------------------------------------------------------------------------------------
 # Search bar
 search_bar = st.text_input(label = "**Search for a specific Masjid**", placeholder="e.g. East London Mosque")
@@ -51,7 +52,7 @@ st.markdown("**Filters**")
 
 filter_columns = st.columns(3)
 
-# Filter for denomination
+# Filter for Mosque denomination
 with filter_columns[0]:
     denomination_options  = ["Sunni","Shia"]
     denomination_filter = st.selectbox(label="Filter for denomination", options=denomination_options, index=None)
@@ -61,7 +62,7 @@ with filter_columns[0]:
         df1 = df1[df1["Denomination"] == "Shia"]
     st.markdown("")
 
-# Allow user to select only mosques which have female facilities
+# Allow user to select only Mosques which have female facilities
 with filter_columns[1]:
     womens_facilities_filter = st.toggle(label="Show all Mosques with Women's facilities", value=False)
     if womens_facilities_filter:
@@ -70,21 +71,19 @@ with filter_columns[1]:
 
 # Geocoding filter
 # Create function for calculating the distance between two coordinates
-def geo_distance_vectorized(input_lat, input_long, mosque_lats, mosque_longs):
-    # Convert all degrees to radians:
+def geo_distance_vectorized(input_lat, input_long, mosque_lat, mosque_long):
     input_coord = np.array([[radians(input_lat), radians(input_long)]])
-    mosque_coords = np.vstack((mosque_lats, mosque_longs)).T
+    mosque_coords = np.vstack((mosque_lat, mosque_long)).T
     mosque_coords_rad = np.radians(mosque_coords)  # convert whole array to radians
     # Calculate distance matrix
     distances = haversine_distances(input_coord, mosque_coords_rad)
-    # distances are in radians, multiply by Earth radius in km to get km
+    # Convert distance to km
     distances_km = distances[0] * 6371
     return distances_km
 
 with filter_columns[2]:
     postcode_input = st.text_input(label="Enter postcode", placeholder="e.g. WC2N 6RH")
     max_distance = st.slider(label="Max distance from postcode to mosque (km)", min_value=0.0, max_value=10.0, value=None, step=0.1)
-    #geo_filter_check = st.checkbox(label="Show Map when I click get directions")
 
     if postcode_input:
         nomi = pgeocode.Nominatim('gb')
@@ -105,7 +104,7 @@ with filter_columns[2]:
     st.markdown("")
 
 #----------------------------------------------------------------------------------------------
-# Display CSV information on streamlit in an elegant way as well as bring in map (lines 109-201)
+# Display CSV information on streamlit in an elegant way as well as bring in map (lines 109-204)
 #----------------------------------------------------------------------------------------------
 # Create pagination feature for displaying mosques
 rows_per_page, columns_per_page =50, 2
@@ -142,6 +141,7 @@ if st.session_state.selected_mosque_index is None:
         denomination = mosque.get('Denomination')
         womens_facilities = mosque.get('Facilities for Women')
 
+        # Display Mosque information on both columns
         with col:
             with st.container(border=True, height= 500):
                 st.markdown(f"### {name}")
@@ -161,6 +161,7 @@ if st.session_state.selected_mosque_index is None:
     st.write(f"Displaying page {current_page} of {number_of_pages}")
                     
 else:
+    # Allow user to be able to click on specific Mosque to be able to get directions
     with columns[0]:
         with st.container(border = True, width = 300, height = 500):
             mosque = df1.iloc[st.session_state.selected_mosque_index]
@@ -179,7 +180,8 @@ else:
     """, 
     unsafe_allow_html=True
 )
-
+    
+    # Use map API to be able to display directions to the Mosque that the user clicks on
     with columns[1]:
         api_key = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImM2YWVmYjliNzkwZjQ1NjViNTQ3OGRkYWYyOWMzNmNmIiwiaCI6Im11cm11cjY0In0="
         client = ors.Client(key= api_key)
