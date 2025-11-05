@@ -6,18 +6,18 @@ import seaborn as sns
 import os
 import streamlit as st
 import pgeocode
-
+#----------------------------------------------------------------------------------------------
+# Add tab title + Formatting of CSV File (lines 12-60)
+#----------------------------------------------------------------------------------------------
 # Add tab title to page
 st.set_page_config(page_title="Add mosque")
-#----------------------------------------------------------------------------------------------
-# Formatting of CSV File (lines 11-65)
-#----------------------------------------------------------------------------------------------
+
+# Bring in CSV file and format it
 df2  = pd.read_csv("uk_mosques_modified.csv")
 df2["Longitude"] = df2["Longitude"].astype(float)
 df2["Latitude"] = pd.to_numeric(df2["Latitude"], errors="coerce")
 
-st.title("Hey Ed! Add mosques here")
-
+# Create form asking user to add relevant information to be able to add Mosque
 with st.form("Add mosque", clear_on_submit=True):
     nomi = pgeocode.Nominatim('gb')
     mosque_name =  st.text_input("Mosque name **(Required)**")
@@ -29,31 +29,27 @@ with st.form("Add mosque", clear_on_submit=True):
     mosque_lat = st.text_input("Latitude (Optional)")
     mosque_capacity = st.text_input("Mosque capacity **(Required)**")
     mosque_denomination = st.text_input("Mosque Denomination **(Required)**")
-    mosque_women = st.text_input("Are there prayer facilities for women?*")
+    mosque_women = st.text_input("Are there prayer facilities for women? **(Required)**")
+    
+    # Add submit button
     submit_button = st.form_submit_button("Submit")
-    # location = nomi.query_postal_code(mosque_postcode)
-    # mosque_lat = location.latitude if not pd.isna(location.latitude) else ""
-    # mosque_long = location.longitude if not pd.isna(location.longitude) else ""
 
-    # if not mosque_lat:
-    #     nomi = pgeocode.Nominatim('gb')
-    #     location = nomi.query_postal_code(mosque_postcode)
-    #     mosque_lat = location.latitude if not pd.isna(location.latitude) else ""
-
-    # if not mosque_long:
-    #     nomi = pgeocode.Nominatim("gb")
-    #     location = nomi.query_postal_code(mosque_postcode)
-    #     mosque_long = location.longitude if not pd.isna(location.longitude) else ""
-#new_data  = [mosque_long, mosque_lat, mosque_name, mosque_denomination, mosque_capacity, mosque_women, mosque_address, mosque_city, mosque_postcode, mosque_number, int(mosque_capacity)] 
- 
     if submit_button:
+        # Add lat and long coordinates to Mosque information manually if user does not (since it is an optional field)
         location = nomi.query_postal_code(mosque_postcode)
-        mosque_lat = float(location.latitude) 
-        mosque_long = float(location.longitude)
+        if not mosque_lat:
+            mosque_lat = float(location.latitude) 
+        if not mosque_long:
+            mosque_long = float(location.longitude)
+        
+        # Create new row of data containing the user input
         new_data  = [mosque_long, mosque_lat, mosque_name, mosque_denomination, mosque_capacity, mosque_women, mosque_address, mosque_city, mosque_postcode, mosque_number, mosque_capacity]
+        
         if not mosque_name or not mosque_city or not mosque_postcode or not mosque_number or not mosque_capacity or not mosque_women or not mosque_denomination or not mosque_address:
-            st.warning("One or more required fields are missing. Please try again")
+            st.error("One or more required fields are missing. Please try again!")
+        
         else:
+            # Append Mosque data if user clicks submit having inputted all required information
             new_row_df = pd.DataFrame([new_data], columns=df2.columns)
             df2 = pd.concat([df2, new_row_df], ignore_index=True)
             df2["Latitude"] = df2["Latitude"].astype(float)
@@ -61,3 +57,4 @@ with st.form("Add mosque", clear_on_submit=True):
             df2["Capacity_For_Calc"] = df2["Capacity_For_Calc"].astype(float)
             df2.to_csv("uk_mosques_modified.csv", index=False)
             st.success("Mosque has now been added!")
+            st.info("Please refresh this page if you want to be able to view the Mosque on the other pages!")
