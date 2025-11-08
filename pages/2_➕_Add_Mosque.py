@@ -53,14 +53,14 @@ with st.form("Add mosque", clear_on_submit=True):
         except ValueError:
             pass
         
-        if mosque_postcode:  # only check if something was entered
-            if not is_valid_uk_postcode(mosque_postcode):
-                st.error("Please enter a valid UK postcode in the correct format, e.g. WC2N 6RH")
-
         # Create new row of data containing the user input
         new_data  = [mosque_long, mosque_lat, mosque_name, mosque_denomination, mosque_capacity, mosque_women, mosque_address, mosque_city, mosque_postcode, mosque_number, mosque_capacity]
+
+        if mosque_postcode and not is_valid_uk_postcode(mosque_postcode):
+            st.error("Please enter a valid UK postcode in the correct format, e.g. WC2N 6RH")
+
         
-        if not mosque_name or not mosque_city or not mosque_postcode or not mosque_number or not mosque_capacity or not mosque_women or not mosque_denomination or not mosque_address:
+        elif not mosque_name or not mosque_city or not mosque_postcode or not mosque_number or not mosque_capacity or not mosque_women or not mosque_denomination or not mosque_address:
             st.error("One or more required fields are missing. Please try again!")
             pass
         
