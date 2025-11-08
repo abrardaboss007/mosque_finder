@@ -7,9 +7,11 @@ import os
 import streamlit as st
 import pgeocode
 import re
+import phonenumbers
+from phonenumbers.phonenumberutil import NumberParseException
 
 #----------------------------------------------------------------------------------------------
-# Add tab title + Formatting of CSV File (lines 12-80)
+# Add tab title + Formatting of CSV File (lines 16-87)
 #----------------------------------------------------------------------------------------------
 # Add tab title to page
 st.set_page_config(page_title="Add mosque")
@@ -24,6 +26,14 @@ def is_valid_uk_postcode(postcode):
     postcode = postcode.strip().upper()
     pattern = r"^(GIR 0AA|[A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2})$"
     return re.match(pattern, postcode) is not None
+
+def is_valid_uk_phone_number(phone):
+    try:
+        parsed = phonenumbers.parse(phone, "GB")  # "GB" is the UK country code
+        formatted_number = phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.INTERNATIONAL)
+        return phonenumbers.is_valid_number(formatted_number)
+    except NumberParseException:
+        return False
 
 # Create form asking user to add relevant information to be able to add Mosque
 with st.form("Add mosque", clear_on_submit=True):
@@ -58,12 +68,13 @@ with st.form("Add mosque", clear_on_submit=True):
 
         if mosque_postcode and not is_valid_uk_postcode(mosque_postcode):
             st.error("Please enter a valid UK postcode in the correct format, e.g. WC2N 6RH")
-
-        
+            st.stop()
+        elif mosque_number and not is_valid_uk_phone_number(mosque_number):
+            st.error("Please enter a valid UK phone number, e.g. +447911123456 or 07911123456")
+            st.stop()
         elif not mosque_name or not mosque_city or not mosque_postcode or not mosque_number or not mosque_capacity or not mosque_women or not mosque_denomination or not mosque_address:
             st.error("One or more required fields are missing. Please try again!")
-            pass
-        
+            st.stop()
         else:
             # Append Mosque data if user clicks submit having inputted all required information
             new_row_df = pd.DataFrame([new_data], columns=df2.columns)
