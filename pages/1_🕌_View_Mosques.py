@@ -117,6 +117,7 @@ number_of_pages = total_number_of_mosques // mosques_per_page + (1 if total_numb
 st.sidebar.title("Pagination")
 current_page = st.sidebar.number_input("Page:", min_value=1, max_value=number_of_pages, value=1)
 
+st.write(f"Displaying page {current_page} of {number_of_pages}")
 
 # Calculate start and end indices for the current page
 start_index = (current_page - 1) * mosques_per_page
@@ -128,7 +129,6 @@ columns = st.columns(columns_per_page)
 
 # Loop over mosques on current page and display info in columns
 if st.session_state.selected_mosque_index is None:
-    st.write(f"Displaying page {current_page} of {number_of_pages}")
     for i, (_, mosque) in enumerate(current_data.iterrows()):
         col = columns[i % columns_per_page]  # Cycle through columns
 

@@ -30,8 +30,7 @@ def is_valid_uk_postcode(postcode):
 def is_valid_uk_phone_number(phone):
     try:
         parsed = phonenumbers.parse(phone, "GB")  # "GB" is the UK country code
-        formatted_number = phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.INTERNATIONAL)
-        return phonenumbers.is_valid_number(formatted_number)
+        return phonenumbers.is_valid_number(parsed)
     except NumberParseException:
         return False
 
@@ -42,7 +41,7 @@ with st.form("Add mosque", clear_on_submit=True):
     mosque_address = st.text_input("Mosque Address **(Required)**")
     mosque_city = st.text_input("City **(Required)**")
     mosque_postcode = st.text_input("Postcode **(Required)**")
-    mosque_number = st.text_input("Contact number of Mosque **(Required)**")
+    mosque_number = st.text_input(label = "Contact number of Mosque **(Required)**", placeholder="Begins with +44...")
     mosque_long = st.number_input(label = "Longitude (Optional)", min_value = -10.6404, max_value = 1.7676, step = 0.0001, format="%0.4f", value=None)
     mosque_lat = st.number_input(label = "Latitude (Optional)", min_value= 49.9424, max_value= 60.8971, step=0.0001, format="%0.4f", value=None)
     mosque_capacity = st.number_input(label= "Mosque capacity **(Required)**", min_value=10, max_value=100000, step = 1, value=None)
@@ -70,7 +69,7 @@ with st.form("Add mosque", clear_on_submit=True):
             st.error("Please enter a valid UK postcode in the correct format, e.g. WC2N 6RH")
             st.stop()
         elif mosque_number and not is_valid_uk_phone_number(mosque_number):
-            st.error("Please enter a valid UK phone number, e.g. +447911123456 or 07911123456")
+            st.error("Please enter a valid UK phone number, e.g. +447939123456")
             st.stop()
         elif not mosque_name or not mosque_city or not mosque_postcode or not mosque_number or not mosque_capacity or not mosque_women or not mosque_denomination or not mosque_address:
             st.error("One or more required fields are missing. Please try again!")
