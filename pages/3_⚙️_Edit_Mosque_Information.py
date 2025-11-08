@@ -14,16 +14,16 @@ import random
 # Add tab title
 st.set_page_config(page_title="Edit Mosques")
 
-# Initialize session state DataFrame once
+# Initialise session state DataFrame once
 if 'df3' not in st.session_state:
     try:
         st.session_state.df3 = pd.read_csv("uk_mosques_modified.csv")
     except FileNotFoundError:
-        st.session_state.df3 = pd.DataFrame()  # fallback to empty if file missing
+        st.session_state.df3 = pd.DataFrame()  
 
 df3 = st.session_state.df3.copy()
 
-# Initialize editing state
+# Initialise editing state
 if 'editing_mosque' not in st.session_state:
     st.session_state.editing_mosque = None
 
@@ -84,35 +84,36 @@ for idx, (_, mosque) in enumerate(current_data.iterrows()):
             if st.button("Edit Information", type='primary', key=f"edit_{idx}"):
                 st.session_state.editing_mosque = idx
 
-                if st.session_state.editing_mosque == idx:
-                    with st.form(f"form_{idx}"):
-                        new_name = st.text_input("Mosque Name", name)
-                        new_address = st.text_input("Address", address)
-                        new_city = st.text_input("City", city)
-                        new_postcode = st.text_input("Postcode", postcode)
-                        new_telephone = st.text_input("Telephone Number", telephone)
-                        new_capacity = st.text_input("Capacity", capacity)
-                        new_denomination = st.text_input("Denomination", denomination)
-                        new_womens = st.text_input("Facilities for Women", womens_facilities)
+            if st.session_state.editing_mosque == idx:
+                with st.form(f"form_{idx}"):
+                    new_name = st.text_input("Mosque Name", name)
+                    new_address = st.text_input("Address", address)
+                    new_city = st.text_input("City", city)
+                    new_postcode = st.text_input("Postcode", postcode)
+                    new_telephone = st.text_input("Telephone Number", telephone)
+                    new_capacity = st.text_input("Capacity", capacity)
+                    new_denomination = st.text_input("Denomination", denomination)
+                    new_womens = st.text_input("Facilities for Women", womens_facilities)
 
-                        submitted = st.form_submit_button("Submit")
-                        cancel = st.form_submit_button("Cancel")
+                    submitted = st.form_submit_button("Submit")
+                    cancel = st.form_submit_button("Cancel")
 
-                        if submitted:
-                            # Update dataframe
-                            st.session_state.df3.at[idx, 'Mosque Name'] = new_name
-                            st.session_state.df3.at[idx, 'City'] = new_city
-                            st.session_state.df3.at[idx, 'Postcode'] = new_postcode
-                            st.session_state.df3.at[idx, 'Telephone Number'] = new_telephone
-                            st.session_state.df3.at[idx, 'Capacity'] = new_capacity
-                            st.session_state.df3.at[idx, 'Denomination'] = new_denomination
-                            st.session_state.df3.at[idx, 'Facilities for Women'] = new_womens
+                    if submitted:
+                        # Update dataframe
+                        st.session_state.df3.at[idx, 'Mosque Name'] = new_name
+                        st.session_state.df3.at[idx, 'City'] = new_city
+                        st.session_state.df3.at[idx, 'Postcode'] = new_postcode
+                        st.session_state.df3.at[idx, 'Telephone Number'] = new_telephone
+                        st.session_state.df3.at[idx, 'Capacity'] = new_capacity
+                        st.session_state.df3.at[idx, 'Denomination'] = new_denomination
+                        st.session_state.df3.at[idx, 'Facilities for Women'] = new_womens
 
-                            st.success("Mosque information updated successfully!")
-                            st.session_state.editing_mosque = None
-                        elif cancel:
-                            st.info("Edit cancelled")
-                            st.session_state.editing_mosque = None
+                        st.success("Mosque information updated successfully!")
+                        st.info("Please refresh this page if you want to be able to view the Mosque on the other pages!")
+                        st.session_state.editing_mosque = None
+                    elif cancel:
+                        st.info("Edit cancelled")
+                        st.session_state.editing_mosque = None
 
 # Optionally add a save to CSV button
 if st.button("Save changes to CSV"):

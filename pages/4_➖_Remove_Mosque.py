@@ -10,7 +10,7 @@ import pgeocode
 st.title("Hey Ed! Remove mosques here")
 st.set_page_config(page_title="View/Search/Filter Mosques")
 
-# Initialize session state DataFrame once
+# Initialise session state DataFrame once
 if 'df4' not in st.session_state:
     try:
         st.session_state.df4 = pd.read_csv("uk_mosques_modified.csv")
@@ -43,7 +43,7 @@ current_data = df4.iloc[start_index:end_index]
 
 columns = st.columns(columns_per_page)
 
-# Initialize the removal target mosque name in session_state if not present
+# Initialise the removal target mosque name in session_state if not present
 if 'remove_mosque_name' not in st.session_state:
     st.session_state.remove_mosque_name = None
 

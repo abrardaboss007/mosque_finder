@@ -14,7 +14,7 @@ from phonenumbers.phonenumberutil import NumberParseException
 # Add tab title + Formatting of CSV File (lines 16-87)
 #----------------------------------------------------------------------------------------------
 # Add tab title to page
-st.set_page_config(page_title="Add mosque")
+st.set_page_config(page_title="Add Mosque")
 
 # Bring in CSV file and format it
 df2  = pd.read_csv("uk_mosques_modified.csv")
