@@ -13,6 +13,7 @@ from functools import reduce
 from sklearn.metrics.pairwise import haversine_distances
 from math import radians
 import random
+import re
 #----------------------------------------------------------------------------------------------
 # Add tab title + Bring in CSV file and make slight modifications to it (lines 19-31)
 #----------------------------------------------------------------------------------------------
@@ -70,6 +71,12 @@ with filter_columns[1]:
     st.markdown("")
 
 # Geocoding filter
+def is_valid_uk_postcode(postcode):
+    # This regex covers most UK postcode formats 
+    postcode = postcode.strip().upper()
+    pattern = r"^(GIR 0AA|[A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2})$"
+    return re.match(pattern, postcode) is not None
+
 # Create function for calculating the distance between two coordinates
 def geo_distance_vectorized(input_lat, input_long, mosque_lat, mosque_long):
     input_coord = np.array([[radians(input_lat), radians(input_long)]])
@@ -90,8 +97,9 @@ with filter_columns[2]:
         postcode_lat = nomi.query_postal_code(postcode_input).latitude
         postcode_long = nomi.query_postal_code(postcode_input).longitude
 
-        if postcode_lat is None or postcode_long is None:
+        if postcode_lat is None or postcode_long is None or not is_valid_uk_postcode(postcode_input):
             st.warning("Invalid postcode, please enter a valid UK postcode.")
+            st.stop()
         elif max_distance:
             # Compute distances for all mosques
             distances = geo_distance_vectorized(postcode_lat, postcode_long, df1["Latitude"].values, df1["Longitude"].values)
@@ -117,6 +125,7 @@ number_of_pages = total_number_of_mosques // mosques_per_page + (1 if total_numb
 st.sidebar.title("Pagination")
 current_page = st.sidebar.number_input("Page:", min_value=1, max_value=number_of_pages, value=1)
 
+st.write(f"Displaying page {current_page} of {number_of_pages}")
 
 # Calculate start and end indices for the current page
 start_index = (current_page - 1) * mosques_per_page
@@ -128,7 +137,6 @@ columns = st.columns(columns_per_page)
 
 # Loop over mosques on current page and display info in columns
 if st.session_state.selected_mosque_index is None:
-    st.write(f"Displaying page {current_page} of {number_of_pages}")
     for i, (_, mosque) in enumerate(current_data.iterrows()):
         col = columns[i % columns_per_page]  # Cycle through columns
 
@@ -191,7 +199,7 @@ else:
         input_coordinates = [float(postcode_long), float(postcode_lat)]
         coords = [mosque_coordinates, input_coordinates]
 
-        map = folium.Map(location=list(reversed(mosque_coordinates)), tiles="cartodbpositron", zoom_start=13)
+        m = folium.Map(location=list(reversed(mosque_coordinates)), tiles="cartodbpositron", zoom_start=13)
 
         route1 = client.directions(coordinates=coords,profile='foot-walking',format='geojson')
         route2 = client.directions(coordinates=coords,profile='driving-car',format='geojson')
@@ -199,7 +207,7 @@ else:
         waypoints1 = list(dict.fromkeys(reduce(operator.concat, list(map(lambda step: step['way_points'], route1['features'][0]['properties']['segments'][0]['steps'])))))
         waypoints2 = list(dict.fromkeys(reduce(operator.concat, list(map(lambda step: step['way_points'], route2['features'][0]['properties']['segments'][0]['steps'])))))
         
-        folium.PolyLine(locations=[list(reversed(coord)) for coord in route1['features'][0]['geometry']['coordinates']], color="blue").add_to(map)
-        folium.PolyLine(locations=[list(reversed(coord)) for coord in route2['features'][0]['geometry']['coordinates']], color="red").add_to(map)
+        folium.PolyLine(locations=[list(reversed(coord)) for coord in route1['features'][0]['geometry']['coordinates']], color="blue").add_to(m)
+        folium.PolyLine(locations=[list(reversed(coord)) for coord in route2['features'][0]['geometry']['coordinates']], color="red").add_to(m)
         
-        st.components.v1.html(folium.Figure().add_child(map).render(), height=500)
+        st.components.v1.html(folium.Figure().add_child(m).render(), height=500)
