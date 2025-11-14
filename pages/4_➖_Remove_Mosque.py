@@ -89,7 +89,8 @@ for i, (_, mosque) in enumerate(current_data.iterrows()):
                             st.session_state.df4.to_csv("uk_mosques_modified.csv", index=False)
 
                             st.success(f"**{name}** has been successfully removed.")
+                            st.info("**Please refresh this page if you want to be able to view this change on the other pages!**")
                             # Reset removal target so form hides
                             st.session_state.remove_mosque_name = None
                         else:
-                            st.warning("Please type exactly as prompted.")
+                            st.warning("**Please type exactly as prompted.**")
