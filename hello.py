@@ -67,4 +67,13 @@ df = df[columns_to_keep]
 # Save the CSV file to a new file
 df.to_csv('uk_mosques_modified.csv', index=False)
 df_modified = pd.read_csv("uk_mosques_modified.csv")
-st.write(df)
+
+st.title("Hey Ed!")
+
+st.markdown("Welcome to the mosque finder app! 👋")
+
+st.markdown("""Here you can view every mosque in the UK, as well as search for mosques. Let's say it's
+            been a couple months and this hasn't really been updated, you can also add mosques! Similarly,
+            you can remove mosques. If you think something does not look right, you can edit mosque information""")
+
+st.markdown("Was not able to get the dashboard done in time unforunately 😔, but I left it there anyways just so you could appreciate the idea")
