@@ -1,3 +1,5 @@
+# Hey Ed, to be able to run this app, please go to hello.py page, then open a new terminal and type streamlit run hello.py
+
 # Import relevant modules
 import pandas as pd
 import numpy as np
@@ -12,7 +14,6 @@ import operator
 from functools import reduce
 from sklearn.metrics.pairwise import haversine_distances
 from math import radians
-import random
 import re
 #----------------------------------------------------------------------------------------------
 # Add tab title + Bring in CSV file and make slight modifications to it (lines 19-31)

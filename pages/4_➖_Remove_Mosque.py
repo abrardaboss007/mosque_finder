@@ -1,3 +1,5 @@
+# Hey Ed, to be able to run this app, please go to hello.py page, then open a new terminal and type streamlit run hello.py
+
 # Import relevant modules
 import pandas as pd
 import numpy as np

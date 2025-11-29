@@ -1,3 +1,5 @@
+# Hey Ed, to be able to run this app, please go to hello.py page, then open a new terminal and type streamlit run hello.py
+
 # Import relevant modules
 import pandas as pd
 import numpy as np
@@ -14,7 +16,7 @@ import random
 # Add tab title
 st.set_page_config(page_title="Edit Mosques")
 
-# Initialize session state DataFrame once
+# Initialise session state DataFrame once
 if 'df3' not in st.session_state:
     try:
         st.session_state.df3 = pd.read_csv("uk_mosques_modified.csv")
@@ -23,7 +25,7 @@ if 'df3' not in st.session_state:
 
 df3 = st.session_state.df3.copy()
 
-# Initialize editing state
+# Initialise editing state
 if 'editing_mosque' not in st.session_state:
     st.session_state.editing_mosque = None
 
@@ -82,9 +84,9 @@ for idx, (_, mosque) in enumerate(current_data.iterrows()):
             st.write(f"**Facilities for Women:** {womens_facilities}")
 
             if st.button("Edit Information", type='primary', key=f"edit_{idx}"):
-                st.session_state.editing_mosque = idx
+                st.session_state.editing_mosque = name
 
-                if st.session_state.editing_mosque == idx:
+                if st.session_state.editing_mosque == name:
                     with st.form(f"form_{idx}"):
                         new_name = st.text_input("Mosque Name", name)
                         new_address = st.text_input("Address", address)
@@ -107,13 +109,9 @@ for idx, (_, mosque) in enumerate(current_data.iterrows()):
                             st.session_state.df3.at[idx, 'Capacity'] = new_capacity
                             st.session_state.df3.at[idx, 'Denomination'] = new_denomination
                             st.session_state.df3.at[idx, 'Facilities for Women'] = new_womens
-
+                            st.session_state.df3.to_csv("uk_mosques_modified.csv", index=False)
                             st.success("Mosque information updated successfully!")
                             st.session_state.editing_mosque = None
                         elif cancel:
                             st.info("Edit cancelled")
                             st.session_state.editing_mosque = None
-
-# Optionally add a save to CSV button
-if st.button("Save changes to CSV"):
-    st.session_state.df3.to_csv("uk_mosques_modified.csv", index=False)
