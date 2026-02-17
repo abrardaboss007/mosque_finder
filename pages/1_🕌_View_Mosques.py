@@ -208,7 +208,7 @@ else:
         waypoints1 = list(dict.fromkeys(reduce(operator.concat, list(map(lambda step: step['way_points'], route1['features'][0]['properties']['segments'][0]['steps'])))))
         waypoints2 = list(dict.fromkeys(reduce(operator.concat, list(map(lambda step: step['way_points'], route2['features'][0]['properties']['segments'][0]['steps'])))))
         
-        folium.PolyLine(locations=[list(reversed(coord)) for coord in route1['features'][0]['geometry']['coordinates']], color="blue").add_to(m)
-        folium.PolyLine(locations=[list(reversed(coord)) for coord in route2['features'][0]['geometry']['coordinates']], color="red").add_to(m)
+        folium.PolyLine(locations=[list(reversed(coord)) for coord in route1['features'][0]['geometry']['coordinates']], color="#0000FF").add_to(m)
+        folium.PolyLine(locations=[list(reversed(coord)) for coord in route2['features'][0]['geometry']['coordinates']], color="#B00303").add_to(m)
         
         st.components.v1.html(folium.Figure().add_child(m).render(), height=500)
